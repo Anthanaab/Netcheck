@@ -8,8 +8,10 @@
         Icon="pack://application:,,,/Assets/netcheck.ico"
         SizeToContent="WidthAndHeight"
         MinHeight="360" MinWidth="520">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <Grid Margin="20,20,20,20">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  Background="{DynamicResource WindowBackgroundBrush}">
+    <Grid Margin="20,20,20,20"
+          Background="{DynamicResource WindowBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -17,14 +19,33 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Netcheck"
-                   FontSize="24" FontWeight="SemiBold" />
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Netcheck"
+                           FontSize="24" FontWeight="SemiBold" />
+                <TextBlock x:Name="VersionText"
+                           Margin="8,6,0,0"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           Text="v0.0.0" />
+            </StackPanel>
+            <Button Grid.Column="1"
+                    x:Name="ThemeToggleButton"
+                    MinWidth="96"
+                    Height="26"
+                    Padding="8,3"
+                    Click="ThemeToggleButton_Click">Mode sombre</Button>
+        </Grid>
         <TextBlock Grid.Row="1" Margin="0,4,0,0"
                    Text="Vérifie l'accès Internet et l'IP publique."
-                   Foreground="{StaticResource TextMutedBrush}" />
+                   Foreground="{DynamicResource TextMutedBrush}" />
 
         <StackPanel Grid.Row="2" Margin="0,16,0,0" Orientation="Vertical">
-            <Border Padding="16" Background="#FFFFFF" CornerRadius="8">
+            <Border Padding="16" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="8">
                 <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -82,7 +103,7 @@
                         </Style.Triggers>
                     </Style>
                 </Expander.Style>
-                <Border Padding="12" Background="#FFFFFF" CornerRadius="8">
+                <Border Padding="12" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="8">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -133,7 +154,7 @@
                             <Button x:Name="ReloadMailButton" Margin="0,6,0,0" Click="ReloadMailButton_Click">Recharger</Button>
                             <Button x:Name="ClearMailButton" Margin="0,6,0,0" Click="ClearMailButton_Click">Effacer</Button>
                             <TextBlock x:Name="MailStatusText" Margin="0,8,0,0" Text="—"
-                                       Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" Width="180" />
+                                       Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Width="180" />
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -151,7 +172,7 @@
                           Margin="0,0,8,0"
                           Checked="AutoCheck_Changed" Unchecked="AutoCheck_Changed" />
                 <TextBlock Text="(s)" VerticalAlignment="Center" Margin="0,0,8,0"
-                           Foreground="{StaticResource TextMutedBrush}" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBox x:Name="IntervalBox" Width="48" Height="26" VerticalContentAlignment="Center"
                          Text="10" TextChanged="IntervalBox_TextChanged" />
             </StackPanel>

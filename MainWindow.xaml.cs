@@ -22,6 +22,7 @@ public partial class MainWindow : Window
     private DispatcherTimer _timer;
     private bool _running;
     private bool _updateChecked;
+    private bool _isDarkMode;
     private string? _lastIp;
     private DateTime _lastMailSent = DateTime.MinValue;
     private static readonly TimeSpan MailCooldown = TimeSpan.FromMinutes(10);
@@ -35,6 +36,8 @@ public partial class MainWindow : Window
         _timer.Tick += async (_, _) => await RunCheckAsync();
         InitializeComponent();
         LoadMailSettings();
+        VersionText.Text = $"v{GetCurrentVersion():0.0.0}";
+        ApplyTheme(false);
         Loaded += async (_, _) => await CheckForUpdatesAsync();
     }
 
@@ -71,15 +74,15 @@ public partial class MainWindow : Window
         _running = true;
         SetBusy(true);
         StatusText.Text = "Vérification en cours...";
-        StatusText.Foreground = Brushes.Black;
+        StatusText.Foreground = GetBrush("TextPrimaryBrush");
         ConnectionText.Text = "—";
-        ConnectionText.Foreground = Brushes.Black;
+        ConnectionText.Foreground = GetBrush("TextPrimaryBrush");
         PingText.Text = "—";
-        PingText.Foreground = Brushes.Black;
+        PingText.Foreground = GetBrush("TextPrimaryBrush");
         IpText.Text = "—";
-        IpText.Foreground = Brushes.Black;
+        IpText.Foreground = GetBrush("TextPrimaryBrush");
         LocationText.Text = "—";
-        LocationText.Foreground = Brushes.Black;
+        LocationText.Foreground = GetBrush("TextPrimaryBrush");
 
         try
         {
@@ -160,6 +163,36 @@ public partial class MainWindow : Window
     private void SetBusy(bool busy)
     {
         CheckButton.IsEnabled = !busy;
+    }
+
+    private void ThemeToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        ApplyTheme(!_isDarkMode);
+    }
+
+    private void ApplyTheme(bool dark)
+    {
+        _isDarkMode = dark;
+
+        SetBrushColor("WindowBackgroundBrush", dark ? "#111311" : "#F3F5F4");
+        SetBrushColor("CardBackgroundBrush", dark ? "#1B1F1C" : "#FFFFFF");
+        SetBrushColor("InputBackgroundBrush", dark ? "#151815" : "#FFFFFF");
+        SetBrushColor("InputBorderBrush", dark ? "#2A322E" : "#C9D2CC");
+        SetBrushColor("TextPrimaryBrush", dark ? "#F2F5F2" : "#1F1F1F");
+        SetBrushColor("TextMutedBrush", dark ? "#A6B0AA" : "#606060");
+
+        ThemeToggleButton.Content = dark ? "Mode clair" : "Mode sombre";
+    }
+
+    private static Brush GetBrush(string key)
+    {
+        return (Brush)Application.Current.Resources[key];
+    }
+
+    private static void SetBrushColor(string key, string colorHex)
+    {
+        var color = (Color)ColorConverter.ConvertFromString(colorHex)!;
+        Application.Current.Resources[key] = new SolidColorBrush(color);
     }
 
     private void ApplyInterval()
