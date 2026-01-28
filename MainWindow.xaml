@@ -1,0 +1,164 @@
+﻿<Window x:Class="Netcheck.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Netcheck"
+        Icon="pack://application:,,,/Assets/netcheck.ico"
+        SizeToContent="WidthAndHeight"
+        MinHeight="360" MinWidth="520">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <Grid Margin="20,20,20,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Netcheck"
+                   FontSize="24" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="1" Margin="0,4,0,0"
+                   Text="Vérifie l'accès Internet et l'IP publique."
+                   Foreground="{StaticResource TextMutedBrush}" />
+
+        <StackPanel Grid.Row="2" Margin="0,16,0,0" Orientation="Vertical">
+            <Border Padding="16" Background="#FFFFFF" CornerRadius="8">
+                <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Statut:"
+                           FontWeight="SemiBold" Margin="0,0,8,0"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" x:Name="StatusText"
+                           Text="En attente" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Connexion:"
+                           FontWeight="SemiBold" Margin="0,8,8,0"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="ConnectionText"
+                           Margin="0,8,0,0" Text="—" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Ping:"
+                           FontWeight="SemiBold" Margin="0,8,8,0"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" x:Name="PingText"
+                           Margin="0,8,0,0" Text="—" />
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="IP publique:"
+                           FontWeight="SemiBold" Margin="0,8,8,0"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" x:Name="IpText"
+                           Margin="0,8,0,0" Text="—" />
+
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Pays / Ville:"
+                           FontWeight="SemiBold" Margin="0,8,8,0"/>
+                <TextBlock Grid.Row="4" Grid.Column="1" x:Name="LocationText"
+                           Margin="0,8,0,0" Text="—" />
+
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="Dernière vérification:"
+                           FontWeight="SemiBold" Margin="0,8,8,0"/>
+                <TextBlock Grid.Row="5" Grid.Column="1" x:Name="LastCheckText"
+                           Margin="0,8,0,0" Text="—" />
+                </Grid>
+            </Border>
+
+            <Expander Header="Notifications email" IsExpanded="False">
+                <Expander.Style>
+                    <Style TargetType="Expander">
+                        <Setter Property="Margin" Value="0,2,0,0" />
+                        <Style.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter Property="Margin" Value="0,12,0,0" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Expander.Style>
+                <Border Padding="12" Background="#FFFFFF" CornerRadius="8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <CheckBox Grid.Row="0" Grid.ColumnSpan="3" x:Name="NotifyEnabled"
+                                  Content="Activer l’envoi d’email quand l’IP change"
+                                  Checked="NotifyEnabled_Changed" Unchecked="NotifyEnabled_Changed"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="SMTP hôte:" Margin="0,10,8,0" />
+                        <TextBox Grid.Row="1" Grid.Column="1" x:Name="SmtpHostBox" Margin="0,8,8,0" />
+                        <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Margin="0,8,0,0">
+                            <TextBlock Text="Port:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <TextBox x:Name="SmtpPortBox" Width="60" VerticalContentAlignment="Center" Text="587" />
+                        </StackPanel>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="SSL/TLS:" Margin="0,10,8,0" />
+                        <CheckBox Grid.Row="2" Grid.Column="1" x:Name="SmtpSslBox" Margin="0,8,0,0" IsChecked="True" />
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Login:" Margin="0,10,8,0" />
+                        <TextBox Grid.Row="3" Grid.Column="1" x:Name="SmtpUserBox" Margin="0,8,8,0" />
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Mot de passe:" Margin="0,10,8,0" />
+                        <PasswordBox Grid.Row="4" Grid.Column="1" x:Name="SmtpPassBox" Margin="0,8,8,0" />
+
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="De:" Margin="0,10,8,0" />
+                        <TextBox Grid.Row="5" Grid.Column="1" x:Name="MailFromBox" Margin="0,8,8,0" />
+
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="À:" Margin="0,10,8,0" />
+                        <TextBox Grid.Row="6" Grid.Column="1" x:Name="MailToBox" Margin="0,8,8,0" />
+
+                        <StackPanel Grid.Row="2" Grid.Column="2" Grid.RowSpan="5" Orientation="Vertical" Margin="0,8,0,0">
+                            <TextBlock Text="Sujet:" Margin="0,0,0,4" />
+                            <TextBox x:Name="MailSubjectBox" Width="180" Text="IP publique changée" />
+                            <Button x:Name="SaveMailButton" Margin="0,10,0,0" Click="SaveMailButton_Click">Enregistrer</Button>
+                            <Button x:Name="TestMailButton" Margin="0,6,0,0" Click="TestMailButton_Click">Tester</Button>
+                            <Button x:Name="ReloadMailButton" Margin="0,6,0,0" Click="ReloadMailButton_Click">Recharger</Button>
+                            <Button x:Name="ClearMailButton" Margin="0,6,0,0" Click="ClearMailButton_Click">Effacer</Button>
+                            <TextBlock x:Name="MailStatusText" Margin="0,8,0,0" Text="—"
+                                       Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" Width="180" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Expander>
+        </StackPanel>
+
+        <Grid Grid.Row="3" Margin="0,4,0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <CheckBox x:Name="AutoCheck" Content="Auto" VerticalAlignment="Center"
+                          Margin="0,0,8,0"
+                          Checked="AutoCheck_Changed" Unchecked="AutoCheck_Changed" />
+                <TextBlock Text="(s)" VerticalAlignment="Center" Margin="0,0,8,0"
+                           Foreground="{StaticResource TextMutedBrush}" />
+                <TextBox x:Name="IntervalBox" Width="48" Height="26" VerticalContentAlignment="Center"
+                         Text="10" TextChanged="IntervalBox_TextChanged" />
+            </StackPanel>
+
+            <Button Grid.Column="1" x:Name="CheckButton" Width="140" Height="32"
+                    Click="CheckButton_Click">Vérifier</Button>
+        </Grid>
+    </Grid>
+    </ScrollViewer>
+</Window>
