@@ -11,6 +11,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -37,6 +38,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         LoadMailSettings();
         VersionText.Text = $"v{GetCurrentVersion():0.0.0}";
+        BindThemeForegrounds();
         ApplyTheme(false);
         Loaded += async (_, _) => await CheckForUpdatesAsync();
     }
@@ -74,15 +76,15 @@ public partial class MainWindow : Window
         _running = true;
         SetBusy(true);
         StatusText.Text = "Vérification en cours...";
-        StatusText.Foreground = GetBrush("TextPrimaryBrush");
+        StatusText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
         ConnectionText.Text = "—";
-        ConnectionText.Foreground = GetBrush("TextPrimaryBrush");
+        ConnectionText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
         PingText.Text = "—";
-        PingText.Foreground = GetBrush("TextPrimaryBrush");
+        PingText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
         IpText.Text = "—";
-        IpText.Foreground = GetBrush("TextPrimaryBrush");
+        IpText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
         LocationText.Text = "—";
-        LocationText.Foreground = GetBrush("TextPrimaryBrush");
+        LocationText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
 
         try
         {
@@ -119,17 +121,20 @@ public partial class MainWindow : Window
                 if (string.IsNullOrWhiteSpace(ip))
                 {
                     IpText.Text = "erreur";
+                    IpText.Foreground = Brushes.DarkOrange;
                     StatusText.Text = "Connexion OK, IP indisponible";
                     StatusText.Foreground = Brushes.DarkOrange;
                 }
                 else
                 {
                     IpText.Text = ip;
+                    IpText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
                     StatusText.Text = "Connexion OK";
                     StatusText.Foreground = Brushes.ForestGreen;
 
                     string? location = await GeoLocationAsync(ip, TimeSpan.FromSeconds(5));
                     LocationText.Text = string.IsNullOrWhiteSpace(location) ? "inconnu" : location;
+                    LocationText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
 
                     if (NotifyEnabled.IsChecked == true)
                     {
@@ -142,7 +147,9 @@ public partial class MainWindow : Window
                 ConnectionText.Text = "NON";
                 ConnectionText.Foreground = Brushes.Firebrick;
                 IpText.Text = "?";
+                IpText.Foreground = Brushes.Firebrick;
                 PingText.Text = "?";
+                PingText.Foreground = Brushes.Firebrick;
                 StatusText.Text = "Pas d'accès Internet";
                 StatusText.Foreground = Brushes.Firebrick;
             }
@@ -182,6 +189,15 @@ public partial class MainWindow : Window
         SetBrushColor("TextMutedBrush", dark ? "#A6B0AA" : "#606060");
 
         ThemeToggleButton.Content = dark ? "Mode clair" : "Mode sombre";
+    }
+
+    private void BindThemeForegrounds()
+    {
+        IpText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
+        LocationText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
+        LastCheckText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
+        VersionText.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+        MailStatusText.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
     }
 
     private static Brush GetBrush(string key)

@@ -5,12 +5,12 @@
 [Setup]
 AppId={{E5F834F0-5B62-4E6B-9F1E-7F9E2B1F1C32}
 AppName=Netcheck
-AppVersion=0.1.3
+AppVersion=0.1.4
 AppPublisher=Polylabs
 DefaultDirName={pf}\Netcheck
 DefaultGroupName=Netcheck
 UninstallDisplayIcon={app}\Netcheck.exe
-OutputBaseFilename=Netcheck-Setup-0.1.3
+OutputBaseFilename=Netcheck-Setup-0.1.4
 OutputDir=.\out
 SetupIconFile=..\Assets\netcheck.ico
 Compression=lzma2
