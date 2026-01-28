@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Mail;
 using System.Net.NetworkInformation;
@@ -24,12 +26,19 @@ public partial class MainWindow : Window
     private bool _running;
     private bool _updateChecked;
     private bool _isDarkMode;
+    private bool _speedtestRunning;
     private string? _lastIp;
     private DateTime _lastMailSent = DateTime.MinValue;
     private static readonly TimeSpan MailCooldown = TimeSpan.FromMinutes(10);
     private const string SettingsFileName = "mailsettings.dat";
+    private const string WindowStateFileName = "windowstate.json";
     private const string UpdateManifestUrl = "https://raw.githubusercontent.com/Anthanaab/Netcheck/master/update.json";
     private const string UpdateManifestFallbackUrl = "https://raw.githubusercontent.com/Anthanaab/Netcheck/refs/heads/master/update.json";
+    private const string SpeedtestDownloadBaseUrl = "https://speed.polylabs.ch/downloading";
+    private const string SpeedtestUploadBaseUrl = "https://speed.polylabs.ch/upload";
+    private const string SpeedtestPingUrl = "https://speed.polylabs.ch/";
+    private const int SpeedtestDownloadStreams = 6;
+    private const int SpeedtestUploadStreams = 2;
 
     public MainWindow()
     {
@@ -40,6 +49,8 @@ public partial class MainWindow : Window
         VersionText.Text = $"v{GetCurrentVersion():0.0.0}";
         BindThemeForegrounds();
         ApplyTheme(false);
+        Loaded += (_, _) => RestoreWindowPosition();
+        Closing += (_, _) => SaveWindowPosition();
         Loaded += async (_, _) => await CheckForUpdatesAsync();
     }
 
@@ -198,6 +209,10 @@ public partial class MainWindow : Window
         LastCheckText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
         VersionText.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
         MailStatusText.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+        SpeedPingText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
+        SpeedDownText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
+        SpeedUpText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
+        SpeedStatusText.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
     }
 
     private static Brush GetBrush(string key)
@@ -233,6 +248,282 @@ public partial class MainWindow : Window
         }
 
         _timer.Interval = TimeSpan.FromSeconds(seconds);
+    }
+
+    private async void SpeedtestButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_speedtestRunning)
+        {
+            return;
+        }
+
+        _speedtestRunning = true;
+        SpeedtestButton.IsEnabled = false;
+        SpeedStatusText.Text = "Test en cours...";
+        SpeedStatusText.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+        SpeedPingText.Text = "—";
+        SpeedDownText.Text = "—";
+        SpeedUpText.Text = "—";
+
+        try
+        {
+            double? pingMs = await AverageSamplesAsync(
+                token => MeasurePingMsIcmpAsync(token),
+                samples: 5,
+                perSampleTimeout: TimeSpan.FromSeconds(3),
+                (index, total) => SpeedStatusText.Text = $"Test ping... ({index}/{total})");
+            SpeedPingText.Text = pingMs.HasValue ? $"{pingMs.Value:0} ms" : "erreur";
+
+            double? downMbps = await AverageSamplesAsync(
+                token => MeasureDownloadMbpsParallelAsync(TimeSpan.FromSeconds(10), token, SpeedtestDownloadStreams),
+                samples: 3,
+                perSampleTimeout: TimeSpan.FromSeconds(15),
+                (index, total) => SpeedStatusText.Text = $"Test download... ({index}/{total})");
+            SpeedDownText.Text = downMbps.HasValue ? $"{downMbps.Value:0.0} Mbps" : "erreur";
+
+            double? upMbps = await AverageSamplesAsync(
+                token => MeasureUploadMbpsParallelAsync(10 * 1024 * 1024, token, SpeedtestUploadStreams),
+                samples: 3,
+                perSampleTimeout: TimeSpan.FromSeconds(25),
+                (index, total) => SpeedStatusText.Text = $"Test upload... ({index}/{total})");
+            SpeedUpText.Text = upMbps.HasValue ? $"{upMbps.Value:0.0} Mbps" : "erreur";
+
+            SpeedStatusText.Text = "Terminé";
+        }
+        catch (Exception ex)
+        {
+            SpeedStatusText.Text = $"Erreur: {ex.Message}";
+        }
+        finally
+        {
+            _speedtestRunning = false;
+            SpeedtestButton.IsEnabled = true;
+        }
+    }
+
+    private static async Task<double?> MeasurePingMsIcmpAsync(CancellationToken token)
+    {
+        try
+        {
+            using var ping = new Ping();
+            PingReply reply = await ping.SendPingAsync("speed.polylabs.ch", 2000);
+            return reply.Status == IPStatus.Success ? reply.RoundtripTime : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static async Task<double?> MeasureDownloadMbpsAsync(TimeSpan duration, CancellationToken token)
+    {
+        string url = AppendNoCacheParam(SpeedtestDownloadBaseUrl);
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using HttpResponseMessage response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        await using var stream = await response.Content.ReadAsStreamAsync(token);
+        byte[] buffer = new byte[64 * 1024];
+        long total = 0;
+        var sw = Stopwatch.StartNew();
+
+        while (sw.Elapsed < duration && !token.IsCancellationRequested)
+        {
+            int read = await stream.ReadAsync(buffer, token);
+            if (read <= 0)
+            {
+                break;
+            }
+            total += read;
+        }
+
+        sw.Stop();
+        if (sw.Elapsed.TotalSeconds <= 0)
+        {
+            return null;
+        }
+
+        return total * 8d / sw.Elapsed.TotalSeconds / 1_000_000d;
+    }
+
+    private static async Task<double?> MeasureDownloadMbpsParallelAsync(TimeSpan duration, CancellationToken token, int streams)
+    {
+        using var durationCts = new CancellationTokenSource(duration);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, durationCts.Token);
+        Task<long>[] tasks = new Task<long>[streams];
+        var sw = Stopwatch.StartNew();
+        for (int i = 0; i < streams; i++)
+        {
+            tasks[i] = MeasureDownloadBytesAsync(linkedCts.Token);
+        }
+
+        long[] results = await Task.WhenAll(tasks);
+        sw.Stop();
+        long totalBytes = 0;
+        foreach (long bytes in results)
+        {
+            totalBytes += bytes;
+        }
+
+        double seconds = sw.Elapsed.TotalSeconds;
+        return seconds <= 0 ? null : totalBytes * 8d / seconds / 1_000_000d;
+    }
+
+    private static async Task<long> MeasureDownloadBytesAsync(CancellationToken token)
+    {
+        string url = AppendNoCacheParam(SpeedtestDownloadBaseUrl);
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using HttpResponseMessage response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
+        if (!response.IsSuccessStatusCode)
+        {
+            return 0;
+        }
+
+        await using var stream = await response.Content.ReadAsStreamAsync(token);
+        byte[] buffer = new byte[64 * 1024];
+        long total = 0;
+
+        while (!token.IsCancellationRequested)
+        {
+            int read = await stream.ReadAsync(buffer, token);
+            if (read <= 0)
+            {
+                break;
+            }
+            total += read;
+        }
+
+        return total;
+    }
+
+#pragma warning disable SYSLIB0014
+    private static async Task<UploadResult?> MeasureUploadBytesAsync(int bytesToSend, CancellationToken token)
+    {
+        try
+        {
+            string url = AppendNoCacheParam(SpeedtestUploadBaseUrl);
+            var request = (HttpWebRequest)WebRequest.Create(url);
+            request.Method = "POST";
+            request.AllowWriteStreamBuffering = false;
+            request.SendChunked = false;
+            request.ContentType = "application/octet-stream";
+            request.ContentLength = bytesToSend;
+
+            var sw = Stopwatch.StartNew();
+            using (Stream reqStream = await request.GetRequestStreamAsync())
+            {
+                byte[] buffer = new byte[64 * 1024];
+                int remaining = bytesToSend;
+                while (remaining > 0 && !token.IsCancellationRequested)
+                {
+                    int chunk = Math.Min(buffer.Length, remaining);
+                    Random.Shared.NextBytes(buffer.AsSpan(0, chunk));
+                    await reqStream.WriteAsync(buffer.AsMemory(0, chunk), token);
+                    remaining -= chunk;
+                }
+            }
+
+            using (var response = (HttpWebResponse)await request.GetResponseAsync())
+            using (var respStream = response.GetResponseStream())
+            {
+                if (respStream != null)
+                {
+                    await respStream.CopyToAsync(Stream.Null, token);
+                }
+            }
+
+            sw.Stop();
+            return sw.Elapsed.TotalSeconds <= 0 ? null : new UploadResult(bytesToSend, sw.Elapsed.TotalSeconds);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+#pragma warning restore SYSLIB0014
+
+    private static async Task<double?> MeasureUploadMbpsParallelAsync(int bytesPerStream, CancellationToken token, int streams)
+    {
+        Task<UploadResult?>[] tasks = new Task<UploadResult?>[streams];
+        for (int i = 0; i < streams; i++)
+        {
+            tasks[i] = MeasureUploadBytesAsync(bytesPerStream, token);
+        }
+
+        UploadResult?[] results = await Task.WhenAll(tasks);
+
+        long totalBytes = 0;
+        double maxSeconds = 0;
+        foreach (UploadResult? result in results)
+        {
+            if (result.HasValue)
+            {
+                totalBytes += result.Value.Bytes;
+                if (result.Value.Seconds > maxSeconds)
+                {
+                    maxSeconds = result.Value.Seconds;
+                }
+            }
+        }
+
+        if (totalBytes == 0 || maxSeconds <= 0)
+        {
+            return null;
+        }
+
+        return totalBytes * 8d / maxSeconds / 1_000_000d;
+    }
+
+    private static async Task<double?> AverageSamplesAsync(
+        Func<CancellationToken, Task<double?>> sampler,
+        int samples,
+        TimeSpan perSampleTimeout,
+        Action<int, int> onProgress)
+    {
+        double total = 0;
+        int count = 0;
+
+        for (int i = 1; i <= samples; i++)
+        {
+            onProgress(i, samples);
+            using var cts = new CancellationTokenSource(perSampleTimeout);
+            double? value = await sampler(cts.Token);
+            if (value.HasValue)
+            {
+                total += value.Value;
+                count++;
+            }
+        }
+
+        return count == 0 ? null : total / count;
+    }
+
+    private static string AppendNoCacheParam(string baseUrl)
+    {
+        string separator = baseUrl.Contains("?") ? "&" : "?";
+        string nonce = Random.Shared.NextDouble().ToString("0.################", CultureInfo.InvariantCulture);
+        return baseUrl + separator + "n=" + nonce;
+    }
+
+    private readonly struct UploadResult
+    {
+        public long Bytes { get; }
+        public double Seconds { get; }
+
+        public UploadResult(long bytes, double seconds)
+        {
+            Bytes = bytes;
+            Seconds = seconds;
+        }
+    }
+
+
+    private void OpenSpeedtestButton_Click(object sender, RoutedEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo("https://speed.polylabs.ch") { UseShellExecute = true });
     }
 
     private async Task CheckForUpdatesAsync()
@@ -704,6 +995,89 @@ public partial class MainWindow : Window
         return Path.Combine(AppContext.BaseDirectory, SettingsFileName);
     }
 
+    private static string GetWindowStatePath()
+    {
+        string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Netcheck");
+        Directory.CreateDirectory(dir);
+        return Path.Combine(dir, WindowStateFileName);
+    }
+
+    private void RestoreWindowPosition()
+    {
+        try
+        {
+            string path = GetWindowStatePath();
+            if (!File.Exists(path))
+            {
+                CenterOnScreen();
+                return;
+            }
+
+            WindowStateSnapshot? snapshot = JsonSerializer.Deserialize<WindowStateSnapshot>(File.ReadAllBytes(path));
+            if (snapshot == null)
+            {
+                CenterOnScreen();
+                return;
+            }
+
+            WindowState = snapshot.State;
+
+            if (snapshot.State == WindowState.Normal)
+            {
+                Left = snapshot.Left;
+                Top = snapshot.Top;
+            }
+            else
+            {
+                Left = snapshot.RestoreLeft;
+                Top = snapshot.RestoreTop;
+            }
+
+            EnsureOnScreen();
+        }
+        catch
+        {
+            CenterOnScreen();
+        }
+    }
+
+    private void SaveWindowPosition()
+    {
+        try
+        {
+            Rect bounds = WindowState == WindowState.Normal ? new Rect(Left, Top, ActualWidth, ActualHeight) : RestoreBounds;
+            var snapshot = new WindowStateSnapshot
+            {
+                Left = Left,
+                Top = Top,
+                RestoreLeft = bounds.Left,
+                RestoreTop = bounds.Top,
+                State = WindowState
+            };
+            File.WriteAllBytes(GetWindowStatePath(), JsonSerializer.SerializeToUtf8Bytes(snapshot));
+        }
+        catch
+        {
+            // Ignore save failures.
+        }
+    }
+
+    private void CenterOnScreen()
+    {
+        var workArea = SystemParameters.WorkArea;
+        Left = workArea.Left + (workArea.Width - ActualWidth) / 2;
+        Top = workArea.Top + (workArea.Height - ActualHeight) / 2;
+    }
+
+    private void EnsureOnScreen()
+    {
+        var workArea = SystemParameters.WorkArea;
+        if (Left < workArea.Left) Left = workArea.Left;
+        if (Top < workArea.Top) Top = workArea.Top;
+        if (Left > workArea.Right - 40) Left = workArea.Right - 40;
+        if (Top > workArea.Bottom - 40) Top = workArea.Bottom - 40;
+    }
+
     private sealed class MailSettings
     {
         public string SmtpHost { get; set; } = "";
@@ -714,5 +1088,14 @@ public partial class MainWindow : Window
         public string From { get; set; } = "";
         public string To { get; set; } = "";
         public string Subject { get; set; } = "";
+    }
+
+    private sealed class WindowStateSnapshot
+    {
+        public double Left { get; set; }
+        public double Top { get; set; }
+        public double RestoreLeft { get; set; }
+        public double RestoreTop { get; set; }
+        public WindowState State { get; set; }
     }
 }

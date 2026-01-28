@@ -5,12 +5,12 @@
 [Setup]
 AppId={{E5F834F0-5B62-4E6B-9F1E-7F9E2B1F1C32}
 AppName=Netcheck
-AppVersion=0.1.4
+AppVersion=0.1.5
 AppPublisher=Polylabs
 DefaultDirName={pf}\Netcheck
 DefaultGroupName=Netcheck
 UninstallDisplayIcon={app}\Netcheck.exe
-OutputBaseFilename=Netcheck-Setup-0.1.4
+OutputBaseFilename=Netcheck-Setup-0.1.5
 OutputDir=.\out
 SetupIconFile=..\Assets\netcheck.ico
 Compression=lzma2
@@ -19,7 +19,7 @@ ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 
 [Files]
-Source: "..\bin\Release\net8.0-windows\win-x64\publish\*"; DestDir: "{app}"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\bin\Release\net8.0-windows\win-x64\publish\*"; DestDir: "{app}"; Excludes: "*.pdb,Netcheck.exe.WebView2\\*"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\Netcheck"; Filename: "{app}\Netcheck.exe"

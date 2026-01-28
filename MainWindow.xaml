@@ -7,6 +7,7 @@
         Title="Netcheck"
         Icon="pack://application:,,,/Assets/netcheck.ico"
         SizeToContent="WidthAndHeight"
+        WindowStartupLocation="Manual"
         MinHeight="360" MinWidth="520">
     <ScrollViewer VerticalScrollBarVisibility="Auto"
                   Background="{DynamicResource WindowBackgroundBrush}">
@@ -78,12 +79,12 @@
                 <TextBlock Grid.Row="3" Grid.Column="0" Text="IP publique:"
                            FontWeight="SemiBold" Margin="0,8,8,0"/>
                 <TextBlock Grid.Row="3" Grid.Column="1" x:Name="IpText"
-                           Margin="0,8,0,0" Text="—" />
+                           Margin="0,8,0,0" Text="—" Foreground="{DynamicResource TextPrimaryBrush}" />
 
                 <TextBlock Grid.Row="4" Grid.Column="0" Text="Pays / Ville:"
                            FontWeight="SemiBold" Margin="0,8,8,0"/>
                 <TextBlock Grid.Row="4" Grid.Column="1" x:Name="LocationText"
-                           Margin="0,8,0,0" Text="—" />
+                           Margin="0,8,0,0" Text="—" Foreground="{DynamicResource TextPrimaryBrush}" />
 
                 <TextBlock Grid.Row="5" Grid.Column="0" Text="Dernière vérification:"
                            FontWeight="SemiBold" Margin="0,8,8,0"/>
@@ -157,6 +158,57 @@
                                        Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Width="180" />
                         </StackPanel>
                     </Grid>
+                </Border>
+            </Expander>
+
+            <Expander Header="Speedtest" IsExpanded="False">
+                <Expander.Style>
+                    <Style TargetType="Expander">
+                        <Setter Property="Margin" Value="0,2,0,0" />
+                        <Style.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter Property="Margin" Value="0,12,0,0" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Expander.Style>
+                <Border Padding="12" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="8">
+                    <StackPanel>
+                        <TextBlock Text="Serveur : speed.polylabs.ch"
+                                   Foreground="{DynamicResource TextMutedBrush}" />
+                        <Button x:Name="SpeedtestButton"
+                                Margin="0,10,0,0"
+                                Height="30"
+                                Click="SpeedtestButton_Click">Lancer le test</Button>
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Ping:" FontWeight="SemiBold" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="SpeedPingText" Text="—" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Download:" FontWeight="SemiBold" Margin="0,6,8,0"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="SpeedDownText" Margin="0,6,0,0" Text="—" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Upload:" FontWeight="SemiBold" Margin="0,6,8,0"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="SpeedUpText" Margin="0,6,0,0" Text="—" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Statut:" FontWeight="SemiBold" Margin="0,6,8,0"/>
+                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="SpeedStatusText" Margin="0,6,0,0" Text="—" />
+                        </Grid>
+                        <Button x:Name="OpenSpeedtestButton"
+                                Margin="0,12,0,0"
+                                Height="30"
+                                Click="OpenSpeedtestButton_Click">Ouvrir dans le navigateur</Button>
+                    </StackPanel>
                 </Border>
             </Expander>
         </StackPanel>
