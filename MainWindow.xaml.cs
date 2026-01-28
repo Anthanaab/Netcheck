@@ -26,7 +26,7 @@ public partial class MainWindow : Window
     private DateTime _lastMailSent = DateTime.MinValue;
     private static readonly TimeSpan MailCooldown = TimeSpan.FromMinutes(10);
     private const string SettingsFileName = "mailsettings.dat";
-    private const string UpdateManifestUrl = "https://example.com/netcheck/update.json";
+    private const string UpdateManifestUrl = "https://raw.githubusercontent.com/Anthanaab/Netcheck/main/update.json";
 
     public MainWindow()
     {
