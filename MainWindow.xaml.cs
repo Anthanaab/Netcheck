@@ -27,6 +27,7 @@ public partial class MainWindow : Window
     private static readonly TimeSpan MailCooldown = TimeSpan.FromMinutes(10);
     private const string SettingsFileName = "mailsettings.dat";
     private const string UpdateManifestUrl = "https://raw.githubusercontent.com/Anthanaab/Netcheck/master/update.json";
+    private const string UpdateManifestFallbackUrl = "https://raw.githubusercontent.com/Anthanaab/Netcheck/refs/heads/master/update.json";
 
     public MainWindow()
     {
@@ -197,9 +198,8 @@ public partial class MainWindow : Window
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            using var request = new HttpRequestMessage(HttpMethod.Get, UpdateManifestUrl);
-            using HttpResponseMessage response = await Http.SendAsync(request, cts.Token);
-            if (!response.IsSuccessStatusCode)
+            HttpResponseMessage response = await FetchUpdateResponseAsync(cts.Token);
+            if (response == null)
             {
                 return;
             }
@@ -233,6 +233,28 @@ public partial class MainWindow : Window
         {
             // Ignore update failures.
         }
+    }
+
+    private static async Task<HttpResponseMessage?> FetchUpdateResponseAsync(CancellationToken token)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, UpdateManifestUrl);
+        HttpResponseMessage response = await Http.SendAsync(request, token);
+        if (response.IsSuccessStatusCode)
+        {
+            return response;
+        }
+
+        response.Dispose();
+
+        using var fallbackRequest = new HttpRequestMessage(HttpMethod.Get, UpdateManifestFallbackUrl);
+        HttpResponseMessage fallbackResponse = await Http.SendAsync(fallbackRequest, token);
+        if (fallbackResponse.IsSuccessStatusCode)
+        {
+            return fallbackResponse;
+        }
+
+        fallbackResponse.Dispose();
+        return null;
     }
 
     private static async Task<string> DownloadInstallerAsync(string url, CancellationToken token)
