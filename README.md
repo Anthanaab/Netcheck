@@ -1,6 +1,7 @@
 # Netcheck
 
 Netcheck is a small WPF app to check Internet access, public IP, ping, and optional email notifications.
+<img width="529" height="388" alt="Netcheck" src="https://github.com/user-attachments/assets/f8756850-b745-4ea0-976a-b839e29e524b" />
 
 ## Features
 - Internet connectivity check
