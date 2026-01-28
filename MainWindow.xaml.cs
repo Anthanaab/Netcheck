@@ -198,7 +198,7 @@ public partial class MainWindow : Window
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            HttpResponseMessage response = await FetchUpdateResponseAsync(cts.Token);
+            HttpResponseMessage? response = await FetchUpdateResponseAsync(cts.Token);
             if (response == null)
             {
                 return;
