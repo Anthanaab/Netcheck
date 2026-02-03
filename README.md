@@ -1,6 +1,6 @@
 # Netcheck
 
-Netcheck is a small app to check Internet access, public IP, ping, and optional email notifications.
+Netcheck is a small app to check Internet access, public IP, ping, and optional email notifications and speedtest.
 
 <img width="500" height="393" alt="Netcheck 1 6 0" src="https://github.com/user-attachments/assets/e195b36c-8336-4c15-bc31-adb8f3cdbc33" />
 
@@ -10,6 +10,7 @@ Netcheck is a small app to check Internet access, public IP, ping, and optional 
 - Ping to 1.1.1.1 with status colors
 - Geolocation (country/city)
 - Optional email notifications when IP changes
+- Speedtest
 
 ## Install
 Use the Windows setup from GitHub Releases:
