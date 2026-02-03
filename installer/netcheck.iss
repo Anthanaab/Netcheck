@@ -5,12 +5,12 @@
 [Setup]
 AppId={{E5F834F0-5B62-4E6B-9F1E-7F9E2B1F1C32}
 AppName=Netcheck
-AppVersion=0.1.6
+AppVersion=0.1.7
 AppPublisher=Polylabs
 DefaultDirName={pf}\Netcheck
 DefaultGroupName=Netcheck
 UninstallDisplayIcon={app}\Netcheck.exe
-OutputBaseFilename=Netcheck-Setup-0.1.6
+OutputBaseFilename=Netcheck-Setup-0.1.7
 OutputDir=.\out
 SetupIconFile=..\Assets\netcheck.ico
 Compression=lzma2
@@ -28,6 +28,9 @@ Name: "{group}\Desinstaller Netcheck"; Filename: "{uninstallexe}"
 
 [Tasks]
 Name: "desktopicon"; Description: "Creer une icone sur le Bureau"; GroupDescription: "Icones supplementaires:"
+
+[Run]
+Filename: "{app}\Netcheck.exe"; Flags: postinstall nowait; Check: HasCmdLineParam('/autostart')
 
 [Code]
 const
@@ -52,6 +55,21 @@ function InternetCloseHandle(hInet: HINTERNET): Boolean;
   external 'InternetCloseHandle@wininet.dll stdcall';
 function HttpQueryInfo(hRequest: HINTERNET; dwInfoLevel: Integer; lpBuffer: string; var lpdwBufferLength: Integer; var lpdwIndex: Integer): Boolean;
   external 'HttpQueryInfoW@wininet.dll stdcall';
+
+function HasCmdLineParam(const Value: string): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 1 to ParamCount do
+  begin
+    if CompareText(ParamStr(I), Value) = 0 then
+    begin
+      Result := True;
+      Exit;
+    end;
+  end;
+end;
 
 function GetVersionPart(const S: string; Index: Integer): Integer;
 var

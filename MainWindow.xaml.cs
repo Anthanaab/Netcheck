@@ -535,7 +535,11 @@ public partial class MainWindow : Window
 
             using var downloadCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
             string installerPath = await DownloadInstallerAsync(update.Url, downloadCts.Token);
-            Process.Start(new ProcessStartInfo(installerPath) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(installerPath)
+            {
+                UseShellExecute = true,
+                Arguments = "/autostart"
+            });
             Application.Current.Shutdown();
         }
         catch

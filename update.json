@@ -1,5 +1,5 @@
 {
-  "version": "0.1.6",
-  "url": "https://github.com/Anthanaab/Netcheck/releases/download/v0.1.6/Netcheck-Setup-0.1.6.exe",
-  "notes": "- Speedtest LibreSpeed"
+  "version": "0.1.7",
+  "url": "https://github.com/Anthanaab/Netcheck/releases/download/v0.1.7/Netcheck-Setup-0.1.7.exe",
+  "notes": "- Relance automatique apres mise a jour"
 }
