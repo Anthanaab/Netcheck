@@ -34,11 +34,19 @@ public partial class MainWindow : Window
     private const string WindowStateFileName = "windowstate.json";
     private const string UpdateManifestUrl = "https://raw.githubusercontent.com/Anthanaab/Netcheck/master/update.json";
     private const string UpdateManifestFallbackUrl = "https://raw.githubusercontent.com/Anthanaab/Netcheck/refs/heads/master/update.json";
-    private const string SpeedtestDownloadBaseUrl = "https://speed.polylabs.ch/downloading";
-    private const string SpeedtestUploadBaseUrl = "https://speed.polylabs.ch/upload";
-    private const string SpeedtestPingUrl = "https://speed.polylabs.ch/";
+    private const string SpeedtestDownloadBaseUrl = "https://speed.polylabs.ch/backend/garbage.php";
+    private const string SpeedtestUploadBaseUrl = "https://speed.polylabs.ch/backend/empty.php";
+    private const string SpeedtestPingUrl = "https://speed.polylabs.ch/backend/empty.php";
     private const int SpeedtestDownloadStreams = 6;
     private const int SpeedtestUploadStreams = 2;
+    private const int SpeedtestPingSamples = 5;
+    private const int SpeedtestDownloadSamples = 3;
+    private const int SpeedtestUploadSamples = 3;
+    private const int SpeedtestPingTimeoutSeconds = 3;
+    private const int SpeedtestDownloadDurationSeconds = 10;
+    private const int SpeedtestDownloadTimeoutSeconds = 15;
+    private const int SpeedtestUploadBytesPerStream = 10 * 1024 * 1024;
+    private const int SpeedtestUploadTimeoutSeconds = 25;
 
     public MainWindow()
     {
@@ -215,11 +223,6 @@ public partial class MainWindow : Window
         SpeedStatusText.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
     }
 
-    private static Brush GetBrush(string key)
-    {
-        return (Brush)Application.Current.Resources[key];
-    }
-
     private static void SetBrushColor(string key, string colorHex)
     {
         var color = (Color)ColorConverter.ConvertFromString(colorHex)!;
@@ -269,22 +272,22 @@ public partial class MainWindow : Window
         {
             double? pingMs = await AverageSamplesAsync(
                 token => MeasurePingMsIcmpAsync(token),
-                samples: 5,
-                perSampleTimeout: TimeSpan.FromSeconds(3),
+                samples: SpeedtestPingSamples,
+                perSampleTimeout: TimeSpan.FromSeconds(SpeedtestPingTimeoutSeconds),
                 (index, total) => SpeedStatusText.Text = $"Test ping... ({index}/{total})");
             SpeedPingText.Text = pingMs.HasValue ? $"{pingMs.Value:0} ms" : "erreur";
 
             double? downMbps = await AverageSamplesAsync(
-                token => MeasureDownloadMbpsParallelAsync(TimeSpan.FromSeconds(10), token, SpeedtestDownloadStreams),
-                samples: 3,
-                perSampleTimeout: TimeSpan.FromSeconds(15),
+                token => MeasureDownloadMbpsParallelAsync(TimeSpan.FromSeconds(SpeedtestDownloadDurationSeconds), token, SpeedtestDownloadStreams),
+                samples: SpeedtestDownloadSamples,
+                perSampleTimeout: TimeSpan.FromSeconds(SpeedtestDownloadTimeoutSeconds),
                 (index, total) => SpeedStatusText.Text = $"Test download... ({index}/{total})");
             SpeedDownText.Text = downMbps.HasValue ? $"{downMbps.Value:0.0} Mbps" : "erreur";
 
             double? upMbps = await AverageSamplesAsync(
-                token => MeasureUploadMbpsParallelAsync(10 * 1024 * 1024, token, SpeedtestUploadStreams),
-                samples: 3,
-                perSampleTimeout: TimeSpan.FromSeconds(25),
+                token => MeasureUploadMbpsParallelAsync(SpeedtestUploadBytesPerStream, token, SpeedtestUploadStreams),
+                samples: SpeedtestUploadSamples,
+                perSampleTimeout: TimeSpan.FromSeconds(SpeedtestUploadTimeoutSeconds),
                 (index, total) => SpeedStatusText.Text = $"Test upload... ({index}/{total})");
             SpeedUpText.Text = upMbps.HasValue ? $"{upMbps.Value:0.0} Mbps" : "erreur";
 
@@ -313,40 +316,6 @@ public partial class MainWindow : Window
         {
             return null;
         }
-    }
-
-    private static async Task<double?> MeasureDownloadMbpsAsync(TimeSpan duration, CancellationToken token)
-    {
-        string url = AppendNoCacheParam(SpeedtestDownloadBaseUrl);
-        using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        using HttpResponseMessage response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
-        if (!response.IsSuccessStatusCode)
-        {
-            return null;
-        }
-
-        await using var stream = await response.Content.ReadAsStreamAsync(token);
-        byte[] buffer = new byte[64 * 1024];
-        long total = 0;
-        var sw = Stopwatch.StartNew();
-
-        while (sw.Elapsed < duration && !token.IsCancellationRequested)
-        {
-            int read = await stream.ReadAsync(buffer, token);
-            if (read <= 0)
-            {
-                break;
-            }
-            total += read;
-        }
-
-        sw.Stop();
-        if (sw.Elapsed.TotalSeconds <= 0)
-        {
-            return null;
-        }
-
-        return total * 8d / sw.Elapsed.TotalSeconds / 1_000_000d;
     }
 
     private static async Task<double?> MeasureDownloadMbpsParallelAsync(TimeSpan duration, CancellationToken token, int streams)
