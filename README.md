@@ -2,7 +2,7 @@
 
 Netcheck is a small app to check Internet access, public IP, ping, and optional email notifications.
 
-<img width="529" height="388" alt="Netcheck" src="https://github.com/user-attachments/assets/f8756850-b745-4ea0-976a-b839e29e524b" />
+<img width="500" height="393" alt="Netcheck 1 6 0" src="https://github.com/user-attachments/assets/e195b36c-8336-4c15-bc31-adb8f3cdbc33" />
 
 ## Features
 - Internet connectivity check
